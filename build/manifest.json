@@ -7,10 +7,10 @@
   "minPlatformVersion": 1060,
   "features": [
     {
-      "name": "system.fetch"
+      "name": "system.storage"
     },
     {
-      "name": "system.storage"
+      "name": "system.fetch"
     }
   ],
   "config": {},

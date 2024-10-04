@@ -36,7 +36,7 @@ module.exports = {
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"package":"cat.calendar","name":"CATCalendar","versionName":"1.0.0","versionCode":1,"icon":"/Common/logo.png","minPlatformVersion":1060,"features":[{"name":"system.fetch"}],"config":{},"router":{"entry":"Hello","pages":{"Hello":{"component":"hello"}}},"display":{"pages":{"Hello":{"titleBarText":"CATCalendar"}}},"versionType":"debug"}');
+module.exports = JSON.parse('{"package":"cat.calendar","name":"CATCalendar","versionName":"1.0.0","versionCode":1,"icon":"/Common/logo.png","minPlatformVersion":1060,"features":[{"name":"system.storage"}],"config":{},"router":{"entry":"Hello","pages":{"Hello":{"component":"hello"}}},"display":{"pages":{"Hello":{"titleBarText":"CATCalendar"}}},"versionType":"debug"}');
 
 /***/ })
 

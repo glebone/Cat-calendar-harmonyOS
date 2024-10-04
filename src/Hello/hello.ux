@@ -10,8 +10,12 @@
     <!-- Year at the top -->
     <text class="year">{{year}}</text>
     
-    <!-- Month and day of the week -->
-    <text class="month-day">{{formattedDate}}</text>
+    <!-- Month and day of the week with navigation buttons -->
+    <div class="month-day-container">
+      <text class="nav-button" @click="previousDay">&lt;</text>
+      <text :class="['month-day', dateColor]">{{formattedDate}}</text>
+      <text class="nav-button" @click="nextDay">&gt;</text>
+    </div>
     
     <!-- Bold day of the month -->
     <text class="date">{{displayDay}}</text>
@@ -24,34 +28,35 @@
     
     <!-- Moon phase image and name -->
     <div class="moon-container">
-      <text class="moon-image">{{moonEmoji}}</text> <!-- Dynamic moon phase emoji -->
+      <text class="moon-image">{{moonEmoji}}</text>
       <text class="moon-phase">{{moonPhase}}</text>
     </div>
     
     <!-- Input for adding a note -->
-    <input class="input" type="text" placeholder="Add note" value="{{note}}" @change="onNoteInput"/>
+    <input class="input" type="text" placeholder="Add note" value="{{note}}" @change="onNoteInput" @blur="onBlur"/>
     
     <!-- Add button -->
     <text class="add-button" @click="addNote">Add</text>
     
-    <!-- Confirmation message -->
-    <text class="confirmation" v-if="confirmation">{{confirmation}}</text>
-    
-    <!-- Display existing notes -->
-    <div class="notes-container" v-if="notes.length > 0">
-      <text class="notes-title">Notes:</text>
-      <text class="note" v-for="(note, index) in notes" :key="index">{{note}}</text>
+    <!-- Scrollable notes area -->
+    <div class="notes-container">
+      <list class="notes-list">
+        <list-item type="text" for="(note, index) in notes" :key="index">
+          <text class="note">{{note}}</text>
+        </list-item>
+      </list>
     </div>
   </div>
 </template>
 
+
 <style>
   .container {
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: space-around;
     align-items: center;
     height: 100%;
-    background-color: #F5E6D3; /* Sepia background */
+    background-color: #F5E6D3;
     padding: 20px;
   }
 
@@ -59,14 +64,20 @@
     font-size: 40px;
     margin-top: 10px;
     text-align: center;
-    color: #4B3621; /* Dark brown font */
+    color: #4B3621;
+  }
+
+  .month-day-container {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 10px;
   }
 
   .month-day {
     font-size: 30px;
     text-align: center;
-    margin-bottom: 10px;
-    color: #4B3621; /* Dark brown font */
   }
 
   .date {
@@ -74,7 +85,6 @@
     font-weight: bold;
     margin: 20px;
     text-align: center;
-    color: #4B3621; /* Dark brown font */
   }
 
   .sun-container {
@@ -89,7 +99,7 @@
     font-size: 30px;
     width: 40%;
     text-align: center;
-    color: #4B3621; /* Dark brown font */
+    color: #4B3621;
   }
 
   .moon-container {
@@ -101,13 +111,13 @@
 
   .moon-image {
     font-size: 50px;
-    color: #4B3621; /* Dark brown font */
+    color: #4B3621;
   }
 
   .moon-phase {
     font-size: 30px;
     text-align: center;
-    color: #4B3621; /* Dark brown font */
+    color: #4B3621;
   }
 
   .input {
@@ -115,48 +125,60 @@
     width: 400px;
     height: 60px;
     border-width: 2px;
-    border-color: #4B3621; /* Dark brown border */
+    border-color: #4B3621;
     border-style: solid;
     border-radius: 10px;
     padding: 10px;
     margin: 20px;
-    color: #4B3621; /* Dark brown font */
+    color: #4B3621;
   }
 
   .add-button {
     font-size: 30px;
     color: white;
-    background-color: #4B3621; /* Dark brown background */
+    background-color: #4B3621;
     border-radius: 10px;
     width: 150px;
     height: 60px;
     text-align: center;
-    line-height: 60px; /* Center text vertically */
-    /* cursor: pointer; */ /* Removed unsupported 'cursor' style */
+    line-height: 60px;
     margin-bottom: 20px;
   }
 
-  .confirmation {
-    font-size: 20px;
-    color: green;
-    margin-top: 10px;
-  }
-
   .notes-container {
-    width: 80%;
-    margin-top: 20px;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-height: 150px;
   }
 
-  .notes-title {
-    font-size: 25px;
-    color: #4B3621;
-    margin-bottom: 10px;
+  .notes-list {
+    width: 100%;
   }
 
   .note {
     font-size: 20px;
     color: #4B3621;
-    margin-bottom: 5px;
+    padding: 5px 0;
+  }
+
+  .nav-button {
+    font-size: 40px;
+    color: #4B3621;
+    margin: 0 20px;
+  }
+
+  /* Dynamic colors for date display */
+  .today {
+    color: black;
+  }
+
+  .future {
+    color: blue;
+  }
+
+  .past {
+    color: green;
   }
 </style>
 
@@ -166,99 +188,84 @@
 
   export default {
     data: {
+      today: new Date(),
+      currentDate: new Date(),
       year: '',
       formattedDate: '',
       displayDay: '',
-      filenameDate: '',
       sunrise: '',
       sunset: '',
       moonPhase: '',
       moonEmoji: '🌑', // Initial moon emoji (New Moon)
       note: '',
-      confirmation: '',
       notes: [],
+      confirmation: '',
+      dateColor: 'today', // Default color for today
+      inputFocused: false
     },
     onInit() {
-      try {
-        console.log('App initializing...');
-        this.setDate();
-        this.fetchSunriseSunset();
-        this.calculateMoonPhase();
-        this.loadNotes();
-        this.$page.setTitleBar({
-          text: 'menu',
-          textColor: '#ffffff',
-          backgroundColor: '#007DFF',
-          backgroundOpacity: 0.5,
-          menu: true
-        });
-        console.log('App initialized.');
-      } catch (error) {
-        console.error('Error during onInit:', error);
-        this.confirmation = 'An unexpected error occurred.';
-      }
+      this.updateDateInfo();
     },
-    setDate() {
-      const today = new Date();
-      this.year = today.getFullYear();
-      
-      const months = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-      ];
-      const daysOfWeek = [
-        'Sunday', 'Monday', 'Tuesday', 'Wednesday',
-        'Thursday', 'Friday', 'Saturday'
-      ];
+    updateDateInfo() {
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-      const month = months[today.getMonth()];
-      const dayOfWeek = daysOfWeek[today.getDay()];
+      this.year = this.currentDate.getFullYear();
+      const month = months[this.currentDate.getMonth()];
+      const dayOfWeek = daysOfWeek[this.currentDate.getDay()];
       this.formattedDate = `${month}, ${dayOfWeek}`;
-      this.displayDay = today.getDate();
+      this.displayDay = this.currentDate.getDate();
 
-      // Format date as "2024-10-03" for storage key
-      const year = today.getFullYear();
-      const monthNum = (today.getMonth() + 1).toString().padStart(2, '0');
-      const day = today.getDate().toString().padStart(2, '0');
-      this.filenameDate = `${year}-${monthNum}-${day}`;
-      console.log(`Date set to ${this.filenameDate}`);
+      const todayString = this.today.toDateString();
+      const currentString = this.currentDate.toDateString();
+
+      if (todayString === currentString) {
+        this.dateColor = 'today';
+      } else if (this.currentDate > this.today) {
+        this.dateColor = 'future';
+      } else {
+        this.dateColor = 'past';
+      }
+
+      this.fetchSunriseSunset();
+      this.calculateMoonPhase();
+      this.loadNotes();
+    },
+    previousDay() {
+      this.currentDate.setDate(this.currentDate.getDate() - 1);
+      this.updateDateInfo();
+    },
+    nextDay() {
+      this.currentDate.setDate(this.currentDate.getDate() + 1);
+      this.updateDateInfo();
     },
     fetchSunriseSunset() {
       const lat = 49.4444;  // Latitude for Cherkasy, Ukraine
       const lng = 32.0598;  // Longitude for Cherkasy, Ukraine
 
       fetch.fetch({
-        url: `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&formatted=0`,
+        url: `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=${this.currentDate.toISOString().split('T')[0]}&formatted=0`,
         method: 'GET',
         success: (data) => {
-          try {
-            const result = JSON.parse(data.data).results;
-            const sunriseUTC = new Date(result.sunrise);
-            const sunsetUTC = new Date(result.sunset);
-            
-            // Convert UTC to local time
-            this.sunrise = this.formatTime(sunriseUTC);
-            this.sunset = this.formatTime(sunsetUTC);
-            console.log(`Sunrise: ${this.sunrise}, Sunset: ${this.sunset}`);
-          } catch (error) {
-            console.error('Error parsing sunrise/sunset data:', error);
-            this.confirmation = 'Error fetching sunrise/sunset data.';
-          }
+          const result = JSON.parse(data.data).results;
+          const sunriseUTC = new Date(result.sunrise);
+          const sunsetUTC = new Date(result.sunset);
+
+          this.sunrise = this.formatTime(sunriseUTC);
+          this.sunset = this.formatTime(sunsetUTC);
         },
         fail: (data, code) => {
           console.error('Failed to fetch sunrise/sunset data', code);
-          this.confirmation = 'Failed to fetch sunrise/sunset data.';
         }
       });
     },
     formatTime(date) {
-      // Convert UTC time to local time and format as HH:MM
       const localHours = date.getHours().toString().padStart(2, '0');
       const localMinutes = date.getMinutes().toString().padStart(2, '0');
       return `${localHours}:${localMinutes}`;
     },
     calculateMoonPhase() {
-      const today = new Date();
+      const today = this.currentDate;
       const year = today.getFullYear();
       const month = today.getMonth() + 1;
       const day = today.getDate();
@@ -276,31 +283,31 @@
 
       const phase = r % 30;
 
-      // Determine the moon phase based on the calculated value
       if (phase < 1) {
         this.moonPhase = 'New Moon';
-        this.moonEmoji = '🌑'; // New Moon
+        this.moonEmoji = '🌑';
       } else if (phase < 7) {
         this.moonPhase = 'Waxing Crescent';
-        this.moonEmoji = '🌒'; // Waxing Crescent
+        this.moonEmoji = '🌒';
       } else if (phase < 14) {
         this.moonPhase = 'First Quarter';
-        this.moonEmoji = '🌓'; // First Quarter
+        this.moonEmoji = '🌓';
       } else if (phase < 21) {
         this.moonPhase = 'Full Moon';
-        this.moonEmoji = '🌕'; // Full Moon
+        this.moonEmoji = '🌕';
       } else if (phase < 28) {
         this.moonPhase = 'Waning Crescent';
-        this.moonEmoji = '🌘'; // Waning Crescent
+        this.moonEmoji = '🌘';
       } else {
         this.moonPhase = 'New Moon';
-        this.moonEmoji = '🌑'; // New Moon
+        this.moonEmoji = '🌑';
       }
-      console.log(`Moon Phase: ${this.moonPhase}`);
     },
     onNoteInput(event) {
-      console.log('Note input changed:', event.value);
       this.note = event.value;
+    },
+    onBlur() {
+      this.inputFocused = false;
     },
     addNote() {
       if (this.note.trim() === '') {
@@ -308,27 +315,43 @@
         return;
       }
 
-      const storageKey = `note_${this.filenameDate}`;
+      const storageKey = `note_${this.currentDate.toISOString().split('T')[0]}`;
       const newNote = this.note.trim();
 
-      try {
-        // Get existing notes
-        storage.get({
-          key: storageKey,
-          success: (data) => {
-            let existingNotes = [];
-            if (data.value) {
-              try {
-                existingNotes = JSON.parse(data.value);
-              } catch (error) {
-                console.error('Error parsing stored notes:', error);
-                existingNotes = [];
-              }
+      storage.get({
+        key: storageKey,
+        success: (data) => {
+          let existingNotes = [];
+          if (data.value) {
+            try {
+              existingNotes = JSON.parse(data.value);
+            } catch (error) {
+              console.error('Error parsing stored notes:', error);
+              existingNotes = [];
             }
-            existingNotes.push(newNote);
-            console.log(`Adding note: "${newNote}" to key: "${storageKey}"`);
+          }
+          existingNotes.push(newNote);
 
-            // Save updated notes
+          storage.set({
+            key: storageKey,
+            value: JSON.stringify(existingNotes),
+            success: () => {
+              this.confirmation = 'Note added successfully!';
+              this.note = ''; // Clear input
+              this.notes = existingNotes; // Update notes display
+              // Attempt to blur input to dismiss the keyboard
+              this.inputFocused = false;
+            },
+            fail: (data, code) => {
+              console.error('Failed to save note', code);
+              this.confirmation = 'Failed to add note.';
+            }
+          });
+        },
+        fail: (data, code) => {
+          if (code === -1) { // Key not found, initialize new notes array
+            const existingNotes = [newNote];
+
             storage.set({
               key: storageKey,
               value: JSON.stringify(existingNotes),
@@ -336,47 +359,23 @@
                 this.confirmation = 'Note added successfully!';
                 this.note = ''; // Clear input
                 this.notes = existingNotes; // Update notes display
-                console.log('Note saved successfully.');
+                // Attempt to blur input to dismiss the keyboard
+                this.inputFocused = false;
               },
               fail: (data, code) => {
                 console.error('Failed to save note', code);
                 this.confirmation = 'Failed to add note.';
               }
             });
-          },
-          fail: (data, code) => {
-            if (code === -1) { // Key not found, initialize new notes array
-              const existingNotes = [newNote];
-              console.log(`Creating new notes array with note: "${newNote}"`);
-
-              storage.set({
-                key: storageKey,
-                value: JSON.stringify(existingNotes),
-                success: () => {
-                  this.confirmation = 'Note added successfully!';
-                  this.note = ''; // Clear input
-                  this.notes = existingNotes; // Update notes display
-                  console.log('New note array created and note saved successfully.');
-                },
-                fail: (data, code) => {
-                  console.error('Failed to save note', code);
-                  this.confirmation = 'Failed to add note.';
-                }
-              });
-            } else {
-              console.error('Failed to get existing notes', code);
-              this.confirmation = 'Failed to add note.';
-            }
+          } else {
+            console.error('Failed to get existing notes', code);
+            this.confirmation = 'Failed to add note.';
           }
-        });
-      } catch (error) {
-        console.error('Error during addNote:', error);
-        this.confirmation = 'An unexpected error occurred while adding the note.';
-      }
+        }
+      });
     },
     loadNotes() {
-      const storageKey = `note_${this.filenameDate}`;
-      console.log(`Loading notes for key: "${storageKey}"`);
+      const storageKey = `note_${this.currentDate.toISOString().split('T')[0]}`;
 
       storage.get({
         key: storageKey,
@@ -384,17 +383,17 @@
           if (data.value) {
             try {
               this.notes = JSON.parse(data.value);
-              console.log(`Loaded notes: ${this.notes}`);
             } catch (error) {
-              console.error('Error parsing stored notes:', error);
+                   console.error('Error parsing stored notes:', error);
               this.notes = [];
             }
+          } else {
+            this.notes = [];
           }
         },
         fail: (data, code) => {
           if (code === -1) { // Key not found, no notes yet
             this.notes = [];
-            console.log('No existing notes found.');
           } else {
             console.error('Failed to load notes', code);
             this.notes = [];
