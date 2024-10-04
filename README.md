@@ -2,7 +2,7 @@
 
 ![CAT Calendar Logo](src/Common/logo.png)
 
-CAT Calendar is a calendar application for Huawei HarmonyOS, built using the QuickAPP IDE. The app features a playful, modern design with a focus on ease of use and functionality. The core theme revolves around a cat interacting with a calendar, making the experience fun and engaging for users.
+CAT Calendar is a calendar application for Huawei HarmonyOS, built using the QuickAPP IDE. 
 
 ## Features
 
